@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'いろはな',
-  description: '介護・看取りの語り場マッチングサービス',
+  description: '介護・看取りの語り場',
 }
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className="bg-white text-gray-900">
         <Navbar />
-        <main className="min-h-screen">{children}</main>
+        <main>{children}</main>
         <Footer />
       </body>
     </html>
