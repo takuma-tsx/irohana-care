@@ -1,25 +1,29 @@
-import './globals.css'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import type { Metadata } from 'next'
+// src/app/layout.tsx
 
-export const metadata: Metadata = {
-  title: 'いろはな',
-  description: '介護・看取りの語り場',
-}
+import "./globals.css";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { AuthProvider } from "@/contexts/AuthContext";
+
+export const metadata = {
+  title: "いろはな",
+  description: "介護の語り手とつながるオンラインサービス",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="ja">
-      <body className="bg-white text-gray-900">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+      <body>
+        <AuthProvider>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
-  )
+  );
 }
