@@ -23,5 +23,5 @@ export default function SignupPage() {
         </button>
       </form>
     </div>
-  )
+  );
 }
