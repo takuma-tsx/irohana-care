@@ -14,21 +14,31 @@ export default function Navbar() {
           いろはな
         </Link>
 
-        {/* 中央：メニュー */}
-        <nav className="hidden md:flex space-x-6 text-sm">
-          <Link href="/search" className="text-gray-600 hover:text-blue-600">
-            話し相手を探す
-          </Link>
-          <Link href="/howto" className="text-gray-600 hover:text-blue-600">
-            使い方
-          </Link>
-          <Link href="/reviews" className="text-gray-600 hover:text-blue-600">
-            レビュー
-          </Link>
-        </nav>
+        {/* 右：ナビメニュー＋ログインなど */}
+        <div className="flex items-center space-x-6 text-sm">
+          {/* ナビメニュー */}
+          <nav className="hidden md:flex space-x-4">
+            <Link
+              href="/search"
+              className="text-gray-600 hover:text-blue-600 whitespace-nowrap"
+            >
+              話し相手を探す
+            </Link>
+            <Link
+              href="/howto"
+              className="text-gray-600 hover:text-blue-600 whitespace-nowrap"
+            >
+              使い方
+            </Link>
+            <Link
+              href="/reviews"
+              className="text-gray-600 hover:text-blue-600 whitespace-nowrap"
+            >
+              レビュー
+            </Link>
+          </nav>
 
-        {/* 右：ログイン or ユーザー表示 */}
-        <div className="flex items-center space-x-4 text-sm">
+          {/* ログイン／登録 or プロフィール */}
           {user ? (
             <>
               <span className="text-gray-600 whitespace-nowrap">
