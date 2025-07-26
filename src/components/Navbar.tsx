@@ -16,8 +16,8 @@ export default function Navbar() {
 
         {/* 右：ナビメニュー＋ログインなど */}
         <div className="flex items-center space-x-6 text-sm">
-          {/* ナビメニュー */}
-          <nav className="hidden md:flex space-x-4">
+          {/* ナビメニュー（常時表示） */}
+          <nav className="flex space-x-4">
             <Link
               href="/search"
               className="text-gray-600 hover:text-blue-600 whitespace-nowrap"
@@ -39,7 +39,7 @@ export default function Navbar() {
           </nav>
 
           {/* ログイン／登録 or プロフィール */}
-          {user ? (
+          {user === undefined ? null : user ? (
             <>
               <span className="text-gray-600 whitespace-nowrap">
                 こんにちは！
