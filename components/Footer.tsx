@@ -5,5 +5,5 @@ export default function Footer() {
         &copy; 2025 いろはな All rights reserved.
       </div>
     </footer>
-  )
+  );
 }
