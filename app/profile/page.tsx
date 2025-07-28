@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/auth";
+import { User } from "firebase/auth"; // 追加
 
 export default function ProfilePage() {
   const router = useRouter();
-  const user = useAuth(); // 分割代入を避ける
+  const { user } = useAuth(); // 分割代入で明確に
   const [role, setRole] = useState<"listener" | "speaker" | "">("");
   const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState("");
@@ -28,9 +29,8 @@ export default function ProfilePage() {
     "思い出・記憶",
   ];
 
-  // 認証チェック中・未ログインの処理
   useEffect(() => {
-    if (user === undefined) return; // ローディング中は何もしない
+    if (user === undefined) return; // ローディング中
     if (user === null) {
       router.push("/signin");
     }
@@ -49,22 +49,24 @@ export default function ProfilePage() {
   const handleSubmit = async () => {
     if (!user || !role) return;
 
+    const firebaseUser = user as User; // 明示的に型付け
+
     const userData = {
-      uid: user.uid,
+      uid: firebaseUser.uid,
       role,
       nickname,
     };
 
-    await setDoc(doc(db, "users", user.uid), userData);
+    await setDoc(doc(db, "users", firebaseUser.uid), userData);
 
     if (role === "speaker") {
       const speakerData = {
-        uid: user.uid,
+        uid: firebaseUser.uid,
         nickname,
         message,
         tags: selectedTags,
       };
-      await setDoc(doc(db, "speakers", user.uid), speakerData);
+      await setDoc(doc(db, "speakers", firebaseUser.uid), speakerData);
     }
 
     router.push("/reserve");
@@ -89,7 +91,7 @@ export default function ProfilePage() {
         >
           <option value="">選択してください</option>
           <option value="listener">聞き手（話を聴きたい）</option>
-          <option value="speaker">語り手（話を聴いてほしい）</option>
+          <option value="speaker">語り手（体験談を届ける）</option>
         </select>
       </div>
 
