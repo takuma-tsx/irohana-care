@@ -19,7 +19,7 @@ export default function SignupPage() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       router.push("/"); // 登録後にトップへ
-    } catch (err: any) {
+    } catch {
       setError(err.message);
     }
   };

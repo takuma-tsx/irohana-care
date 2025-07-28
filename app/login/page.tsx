@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/"); // ログイン後にトップへ
-    } catch (err: any) {
+    } catch {
       setError("ログインに失敗しました");
     }
   };
