@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/auth";
-import { User } from "firebase/auth"; // 追加
+import { db } from "@/lib/firebase";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user } = useAuth(); // 分割代入で明確に
-  const [role, setRole] = useState<"listener" | "speaker" | "">("");
+  const user = useAuth();
+
+  const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState("");
+  const [roles, setRoles] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const maxTagCount = 5;
 
   const allTags = [
     "介護",
@@ -29,12 +29,47 @@ export default function ProfilePage() {
     "思い出・記憶",
   ];
 
+  const maxTagCount = 5;
+
   useEffect(() => {
-    if (user === undefined) return; // ローディング中
+    if (user === undefined) return;
     if (user === null) {
-      router.push("/signin");
+      router.push("/login");
+      return;
     }
+
+    const fetchData = async () => {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setNickname(data.nickname || "");
+          setRoles(data.roles || []);
+        }
+
+        const speakerRef = doc(db, "speakers", user.uid);
+        const speakerSnap = await getDoc(speakerRef);
+        if (speakerSnap.exists()) {
+          const speakerData = speakerSnap.data();
+          setMessage(speakerData.message || "");
+          setSelectedTags(speakerData.tags || []);
+        }
+      } catch (err) {
+        console.error("プロフィール取得エラー", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [user, router]);
+
+  const handleRoleChange = (role: string) => {
+    setRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
+    );
+  };
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
@@ -47,53 +82,33 @@ export default function ProfilePage() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !role) return;
-
-    const firebaseUser = user as User; // 明示的に型付け
+    if (!user || roles.length === 0) return;
 
     const userData = {
-      uid: firebaseUser.uid,
-      role,
+      uid: user.uid,
       nickname,
+      roles,
     };
+    await setDoc(doc(db, "users", user.uid), userData);
 
-    await setDoc(doc(db, "users", firebaseUser.uid), userData);
-
-    if (role === "speaker") {
+    if (roles.includes("speaker")) {
       const speakerData = {
-        uid: firebaseUser.uid,
+        uid: user.uid,
         nickname,
         message,
         tags: selectedTags,
       };
-      await setDoc(doc(db, "speakers", firebaseUser.uid), speakerData);
+      await setDoc(doc(db, "speakers", user.uid), speakerData);
     }
 
-    router.push("/reserve");
+    router.push("/mypage");
   };
 
-  if (user === undefined) {
-    return <p>読み込み中...</p>;
-  }
+  if (loading) return <p className="text-center mt-10">読み込み中...</p>;
 
   return (
     <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">プロフィール登録</h1>
-
-      <div className="mb-4">
-        <label className="block font-semibold mb-1">あなたの役割を選択</label>
-        <select
-          value={role}
-          onChange={(e) =>
-            setRole(e.target.value as "listener" | "speaker" | "")
-          }
-          className="w-full border rounded px-3 py-2"
-        >
-          <option value="">選択してください</option>
-          <option value="listener">聞き手（話を聴きたい）</option>
-          <option value="speaker">語り手（体験談を届ける）</option>
-        </select>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">プロフィールの確認・編集</h1>
 
       <div className="mb-4">
         <label className="block font-semibold mb-1">ハンドルネーム</label>
@@ -105,23 +120,50 @@ export default function ProfilePage() {
         />
       </div>
 
-      {role === "speaker" && (
+      <div className="mb-4">
+        <label className="block font-semibold mb-2">
+          あなたの役割（複数選択可）
+        </label>
+        <div className="flex gap-4 flex-wrap">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              value="listener"
+              checked={roles.includes("listener")}
+              onChange={() => handleRoleChange("listener")}
+            />
+            聞き手（誰かの話を聴きたい）
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              value="speaker"
+              checked={roles.includes("speaker")}
+              onChange={() => handleRoleChange("speaker")}
+            />
+            語り手（体験談を届けたい）
+          </label>
+        </div>
+      </div>
+
+      {roles.includes("speaker") && (
         <>
           <div className="mb-4">
             <label className="block font-semibold mb-1">
-              ひとことメッセージ
+              体験談を届けたい方は、ひとことメッセージを入力してください
             </label>
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full border rounded px-3 py-2"
+              placeholder="例：わたしの経験が誰かの力になりますように"
             />
           </div>
 
           <div className="mb-4">
             <label className="block font-semibold mb-1">
-              話したいテーマ（最大5つまで）
+              話せるテーマ（最大{maxTagCount}つまで）
             </label>
             <div className="flex flex-wrap gap-2">
               {allTags.map((tag) => (
@@ -147,7 +189,7 @@ export default function ProfilePage() {
         onClick={handleSubmit}
         className="mt-6 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
       >
-        登録してはじめる
+        保存する
       </button>
     </div>
   );

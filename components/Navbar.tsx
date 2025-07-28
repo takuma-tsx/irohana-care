@@ -2,9 +2,19 @@
 
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function Navbar() {
   const { user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("ログアウトに失敗しました", error);
+    }
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -38,7 +48,7 @@ export default function Navbar() {
             </Link>
           </nav>
 
-          {/* ログイン／登録 or プロフィール */}
+          {/* 認証状態による表示切替 */}
           {user === undefined ? null : user ? (
             <>
               <span className="text-gray-600 whitespace-nowrap">
@@ -50,6 +60,18 @@ export default function Navbar() {
               >
                 プロフィール
               </Link>
+              <Link
+                href="/mypage"
+                className="text-blue-600 hover:underline whitespace-nowrap"
+              >
+                予約履歴
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="text-gray-600 hover:text-red-600 whitespace-nowrap"
+              >
+                ログアウト
+              </button>
             </>
           ) : (
             <>
