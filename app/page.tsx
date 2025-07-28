@@ -27,7 +27,7 @@ export default function HomePage() {
               聞き手
             </span>
           </div>
-          <button className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+          <button className="bg-orange-500 text-white px-6 py-3 rounded hover:bg-orange-400">
             会員登録（無料）
           </button>
         </div>
@@ -144,7 +144,7 @@ export default function HomePage() {
           まずは無料登録からはじめよう
         </h3>
         <div className="flex justify-center gap-6">
-          <button className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+          <button className="bg-orange-500 text-white px-6 py-3 rounded hover:bg-orange-400">
             今すぐはじめる
           </button>
           <button className="bg-gray-100 text-gray-800 px-6 py-3 rounded hover:bg-gray-200">
