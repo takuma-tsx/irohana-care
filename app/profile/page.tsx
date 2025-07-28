@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 
 export default function ProfilePage() {
@@ -33,14 +33,15 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (currentUser === null) {
+    if (currentUser.user === null || currentUser.user === undefined) {
       router.push("/login");
       return;
     }
 
     const fetchData = async () => {
       try {
-        const userRef = doc(db, "users", currentUser.uid);
+        const uid = currentUser.user.uid;
+        const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
@@ -49,7 +50,7 @@ export default function ProfilePage() {
         }
 
         if (roles.includes("speaker")) {
-          const speakerRef = doc(db, "speakers", currentUser.uid);
+          const speakerRef = doc(db, "speakers", uid);
           const speakerSnap = await getDoc(speakerRef);
           if (speakerSnap.exists()) {
             const speakerData = speakerSnap.data();
@@ -65,7 +66,7 @@ export default function ProfilePage() {
     };
 
     fetchData();
-  }, [currentUser]);
+  }, [currentUser, roles, router]);
 
   const handleRoleChange = (role: string) => {
     setRoles((prev) =>
@@ -84,23 +85,25 @@ export default function ProfilePage() {
   };
 
   const handleSubmit = async () => {
-    if (!currentUser || roles.length === 0) return;
+    if (!currentUser.user || roles.length === 0) return;
+
+    const uid = currentUser.user.uid;
 
     const userData = {
-      uid: currentUser.uid,
+      uid,
       nickname,
       roles,
     };
-    await setDoc(doc(db, "users", currentUser.uid), userData);
+    await setDoc(doc(db, "users", uid), userData);
 
     if (roles.includes("speaker")) {
       const speakerData = {
-        uid: currentUser.uid,
+        uid,
         nickname,
         message,
         tags: selectedTags,
       };
-      await setDoc(doc(db, "speakers", currentUser.uid), speakerData);
+      await setDoc(doc(db, "speakers", uid), speakerData);
     }
 
     router.push("/mypage");
