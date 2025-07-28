@@ -33,14 +33,16 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (currentUser.user === null || currentUser.user === undefined) {
+
+    if (!currentUser.user) {
       router.push("/login");
       return;
     }
 
+    const uid = currentUser.user.uid;
+
     const fetchData = async () => {
       try {
-        const uid = currentUser.user.uid;
         const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
