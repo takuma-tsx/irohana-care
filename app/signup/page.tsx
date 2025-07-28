@@ -20,7 +20,7 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, email, password);
       router.push("/"); // 登録後にトップへ
     } catch {
-      setError(err.message);
+      setError("アカウント作成に失敗しました");
     }
   };
 
