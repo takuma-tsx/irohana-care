@@ -1,11 +1,13 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export default function ReserveCompletePage() {
+// Suspenseにラップする内部コンポーネント
+function ReserveCompleteInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -72,5 +74,18 @@ export default function ReserveCompletePage() {
         マイページへ戻る
       </button>
     </div>
+  );
+}
+
+// 外側のコンポーネントでSuspenseラップ
+export default function ReserveCompletePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-10 text-center text-gray-500">読み込み中...</div>
+      }
+    >
+      <ReserveCompleteInner />
+    </Suspense>
   );
 }
