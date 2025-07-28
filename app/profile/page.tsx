@@ -8,7 +8,7 @@ import { db } from "@/lib/firebase";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const user = useAuth();
+  const currentUser = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState("");
@@ -32,15 +32,15 @@ export default function ProfilePage() {
   const maxTagCount = 5;
 
   useEffect(() => {
-    if (user === undefined) return;
-    if (user === null) {
+    if (currentUser === undefined) return;
+    if (currentUser === null) {
       router.push("/login");
       return;
     }
 
     const fetchData = async () => {
       try {
-        const userRef = doc(db, "users", user.uid);
+        const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
@@ -48,12 +48,14 @@ export default function ProfilePage() {
           setRoles(data.roles || []);
         }
 
-        const speakerRef = doc(db, "speakers", user.uid);
-        const speakerSnap = await getDoc(speakerRef);
-        if (speakerSnap.exists()) {
-          const speakerData = speakerSnap.data();
-          setMessage(speakerData.message || "");
-          setSelectedTags(speakerData.tags || []);
+        if (roles.includes("speaker")) {
+          const speakerRef = doc(db, "speakers", currentUser.uid);
+          const speakerSnap = await getDoc(speakerRef);
+          if (speakerSnap.exists()) {
+            const speakerData = speakerSnap.data();
+            setMessage(speakerData.message || "");
+            setSelectedTags(speakerData.tags || []);
+          }
         }
       } catch (err) {
         console.error("プロフィール取得エラー", err);
@@ -63,7 +65,7 @@ export default function ProfilePage() {
     };
 
     fetchData();
-  }, [user, router]);
+  }, [currentUser]);
 
   const handleRoleChange = (role: string) => {
     setRoles((prev) =>
@@ -82,23 +84,23 @@ export default function ProfilePage() {
   };
 
   const handleSubmit = async () => {
-    if (!user || roles.length === 0) return;
+    if (!currentUser || roles.length === 0) return;
 
     const userData = {
-      uid: user.uid,
+      uid: currentUser.uid,
       nickname,
       roles,
     };
-    await setDoc(doc(db, "users", user.uid), userData);
+    await setDoc(doc(db, "users", currentUser.uid), userData);
 
     if (roles.includes("speaker")) {
       const speakerData = {
-        uid: user.uid,
+        uid: currentUser.uid,
         nickname,
         message,
         tags: selectedTags,
       };
-      await setDoc(doc(db, "speakers", user.uid), speakerData);
+      await setDoc(doc(db, "speakers", currentUser.uid), speakerData);
     }
 
     router.push("/mypage");
@@ -124,7 +126,7 @@ export default function ProfilePage() {
         <label className="block font-semibold mb-2">
           あなたの役割（複数選択可）
         </label>
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-4">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -150,20 +152,19 @@ export default function ProfilePage() {
         <>
           <div className="mb-4">
             <label className="block font-semibold mb-1">
-              体験談を届けたい方は、ひとことメッセージを入力してください
+              体験談を届ける方は、ひとことメッセージを記入してください
             </label>
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full border rounded px-3 py-2"
-              placeholder="例：わたしの経験が誰かの力になりますように"
             />
           </div>
 
           <div className="mb-4">
             <label className="block font-semibold mb-1">
-              話せるテーマ（最大{maxTagCount}つまで）
+              話せるテーマ（最大5つまで）
             </label>
             <div className="flex flex-wrap gap-2">
               {allTags.map((tag) => (
