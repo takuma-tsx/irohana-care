@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 export default function ReservePage() {
@@ -15,12 +23,14 @@ export default function ReservePage() {
     "month",
   );
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState("");
 
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const editId = searchParams.get("edit"); // ← 変更対象ID（予約ID）
+  const editId = searchParams.get("edit");
 
   const now = new Date();
   const todayJST = new Date(
@@ -52,7 +62,6 @@ export default function ReservePage() {
 
   const canReserve = isDateValid && selectedTime !== null;
 
-  // 編集モードの初期データ読み込み
   useEffect(() => {
     const fetchEditData = async () => {
       if (!editId) {
@@ -76,8 +85,42 @@ export default function ReservePage() {
     fetchEditData();
   }, [editId]);
 
-  const handleSubmit = async () => {
+  const handleOpenModal = async () => {
     if (!canReserve) return;
+
+    setChecking(true);
+    setError("");
+
+    const targetDate = date!.toISOString().slice(0, 10);
+    try {
+      const q = query(
+        collection(db, "reservations"),
+        where("speakerId", "==", params.id),
+        where("date", "==", targetDate),
+        where("time", "==", selectedTime),
+      );
+      const snapshot = await getDocs(q);
+
+      const isConflict = snapshot.docs.some((doc) => doc.id !== editId); // 自分以外
+
+      if (isConflict) {
+        setError(
+          "この日時はすでに予約されています。別の時間を選んでください。",
+        );
+        return;
+      }
+
+      setShowModal(true);
+    } catch (e) {
+      setError("予約確認中にエラーが発生しました。");
+      console.error(e);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!date || !selectedTime) return;
 
     const user = auth.currentUser;
     if (!user) {
@@ -89,14 +132,13 @@ export default function ReservePage() {
     const data = {
       userId: user.uid,
       speakerId: params.id,
-      date: date!.toISOString().slice(0, 10),
+      date: date.toISOString().slice(0, 10),
       time: selectedTime,
       updatedAt: new Date(),
     };
 
     try {
       if (editId) {
-        // 上書き保存
         await setDoc(doc(db, "reservations", editId), data, { merge: true });
       } else {
         const newId = crypto.randomUUID();
@@ -173,20 +215,44 @@ export default function ReservePage() {
             </>
           )}
 
-          {isDateValid && selectedTime && (
-            <div className="mt-4 text-green-700 font-medium">
-              選択された日時：{date.toLocaleDateString()} {selectedTime}
-            </div>
-          )}
+          {error && <p className="text-red-500 mb-4">{error}</p>}
 
           <button
-            onClick={handleSubmit}
-            disabled={!canReserve}
-            className="mt-6 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-40"
+            onClick={handleOpenModal}
+            disabled={!canReserve || checking}
+            className="mt-6 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
           >
-            {editId ? "予約を変更する" : "予約する"}
+            {checking ? "確認中..." : editId ? "予約を変更する" : "予約する"}
           </button>
         </>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center transition-opacity duration-300">
+          <div className="bg-white p-6 rounded shadow-md max-w-md w-full animate-fade-in">
+            <h2 className="text-xl font-semibold mb-4">予約内容の確認</h2>
+            <p className="mb-2">
+              <strong>日付：</strong> {date?.toLocaleDateString()}
+            </p>
+            <p className="mb-4">
+              <strong>時間：</strong> {selectedTime}
+            </p>
+            <div className="flex justify-center gap-6 mt-6">
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-700 hover:underline"
+              >
+                戻る
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-500"
+              >
+                予約確定
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
